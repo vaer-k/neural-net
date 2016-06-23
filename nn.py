@@ -22,8 +22,11 @@ class NeuralNetwork:
         "logistic" or "tanh"
         """
         
+        train = pd.read_csv(train)
+        self.labels = train['label']
+        self.train = train.drop('label', axis=1)
+        
         self.test = pd.read_csv(test)
-        self.train = pd.read_csv(train)
         
         self.input_layer_size = self.train.shape[1] - 1
         self.hidden_layer_size = 25
@@ -57,23 +60,32 @@ class NeuralNetwork:
         partial derivatives of the neural network.
         """
 
-        # Initialize
+        ## Initialize
         
-        train_size = self.hidden_layer_size * (self.input_layer_size + 1)
-        Theta1 = np.reshape(nn_params[0:train_size],
+        theta1_size = self.hidden_layer_size * (self.input_layer_size + 1)
+        Theta1 = np.reshape(nn_params[0:theta1_size],
                                (self.hidden_layer_size, self.input_layer_size + 1))
-        Theta2 = np.reshape(nn_params[train_size + 1:],
+        Theta2 = np.reshape(nn_params[theta1_size + 1:],
                                (self.num_labels, self.hidden_layer_size + 1))
 
         m = np.shape(X)[0]
-#
+
         J = 0
         Theta1_grad = np.zeros(np.shape(Theta1))
         Theta2_grad = np.zeros(np.shape(Theta2))
-#
-#        # Feed forward from initial theta
-#        X = np.concatenate((np.ones([m, 1]), X), axis=1)
-#
-#
-#
-#        return grad
+
+        ## Feed forward from initial theta
+
+        # Add bias terms
+        X = np.concatenate((np.ones([m, 1]), X), axis=1)
+        
+        # Compute activation of every node in hidden layer for every example
+        a2 = self.activation(np.dot(X, Theta1.T))
+        
+        
+        
+        
+        
+
+        grad = np.concatenate(np.ravel(Theta1_grad), np.ravel(Theta2_grad))
+        return grad
