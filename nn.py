@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import math
 
 def tanh(x):
     return np.tanh(x)
@@ -45,7 +44,7 @@ class NeuralNetwork:
         of space (the +1s) for the "bias" terms.
         """
         
-        epsilon_init = math.sqrt(6) / math.sqrt(L_in + L_out)
+        epsilon_init = np.sqrt(6) / np.sqrt(L_in + L_out)
         return (np.random.random((L_out, 1 + L_in)) * 2 * epsilon_init) - epsilon_init
 
     def nnCostFunction(self, nn_params, X, y, lambda_):
