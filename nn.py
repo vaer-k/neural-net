@@ -1,17 +1,24 @@
 import numpy as np
 import pandas as pd
 
+########################################################################################################################
+########################################################################################################################
+
 def tanh(x):
     return np.tanh(x)
+
 
 def tanh_derivative(x):
     return 1.0 - np.tanh(x)**2
 
+
 def logistic(x):
     return 1/(1 + np.exp(-x))
 
+
 def logistic_derivative(x):
     return logistic(x)*(1-logistic(x))
+
 
 class NeuralNetwork:
     def __init__(self, test='./input/test.csv', train='./input/train.csv', num_labels=10, activation='logistic'):
