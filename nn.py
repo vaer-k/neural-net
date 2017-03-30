@@ -1,53 +1,29 @@
+import activation
 import numpy as np
 import pandas as pd
 
-########################################################################################################################
-########################################################################################################################
-
-def tanh(x):
-    return np.tanh(x)
-
-
-def tanh_derivative(x):
-    return 1.0 - np.tanh(x)**2
-
-
-def logistic(x):
-    return 1/(1 + np.exp(-x))
-
-
-def logistic_derivative(x):
-    return logistic(x)*(1-logistic(x))
-
 
 class NeuralNetwork:
-    def __init__(self, test='./input/test.csv', train='./input/train.csv', num_labels=10, activation='logistic'):
+    def __init__(self, test='./raw_data/test.csv', train='./raw_data/train.csv', num_labels=10, activation_='logistic'):
         """
         :param layers: A list containing the number of units in each layer.
         Should be at least two values
-        :param activation: The activation function to be used. Can be
+        :param activation_: The activation function to be used. Can be
         "logistic" or "tanh"
         """
-        
         train = pd.read_csv(train)
         self.labels = train['label']
         self.train = train.drop('label', axis=1)
-        
+
         self.test = pd.read_csv(test)
-        
+
         self.input_layer_size = self.train.shape[1] - 1
         self.hidden_layer_size = 25
         self.num_labels = num_labels
         
-        
-        if activation == 'logistic':
-            self.activation = logistic
-            self.activation_derivative = logistic_derivative
-        elif activation == 'tanh':
-            self.activation = tanh
-            self.activation_derivative = tanh_derivative
+        self.activation = activation.get(activation_)
 
-    def randInitializeWeights(self, L_in, L_out):
+    def init_weights(self, L_in, L_out):
         """
         Randomly initialize the weights of a layer with L_in incoming
         connections and L_out outgoing connections. Note the addition
