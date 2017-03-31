@@ -1,5 +1,5 @@
 import pdb
-import activation
+import funcs
 import numpy as np
 import pandas as pd
 
@@ -22,7 +22,7 @@ class NeuralNetwork:
         self.hidden_layer_size = 25
         self.num_labels = num_labels
         
-        self.activation = activation.get(activation_)
+        self.activation = funcs.Activation.get(activation_)
 
     def init_weights(self, L_in, L_out):
         """
