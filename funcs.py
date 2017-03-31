@@ -4,8 +4,8 @@ import numpy as np
 class Activation:
     def __init__(self):
         self.options = {
-            'tanh': self.tanh,
-            'logistic': self.logistic,
+            "tanh": self.tanh,
+            "logistic": self.logistic,
         }
 
     @classmethod
@@ -25,8 +25,8 @@ class Activation:
 class Cost:
     def __init__(self):
         self.options = {
-            'cross_entropy': self.cross_entropy,
-            'mse': self.mse,
+            "cross_entropy": self.cross_entropy,
+            "mse": self.mse,
         }
 
     @classmethod

@@ -3,26 +3,29 @@ import funcs
 import numpy as np
 import pandas as pd
 
+TEST = "./raw_data/test.csv"
+TRAIN = "./raw_data/train.csv"
 
-class NeuralNetwork:
-    def __init__(self, test='./raw_data/test.csv', train='./raw_data/train.csv', num_labels=10, activation_='logistic'):
+
+class DigitClassifier:
+    def __init__(self, test=TEST, train=TRAIN, activation_="logistic", alpha=0.5, layers=None):
         """
         :param layers: A list containing the number of units in each layer.
-        Should be at least two values
+        The last layer is considered the output layer
         :param activation_: The activation function to be used. Can be
         "logistic" or "tanh"
         """
-        train = pd.read_csv(train)
-        self.labels = train['label']
-        self.train = train.drop('label', axis=1)
+        layers = layers or [5, 10]  # Default to one hidden layer with 5 units and one 10 unit output layer
+
+        if len(layers) < 2:
+            raise TypeError('The layers arg should be a tuple containing at least two integers')
 
         self.test = pd.read_csv(test)
-
-        self.input_layer_size = self.train.shape[1] - 1
-        self.hidden_layer_size = 25
-        self.num_labels = num_labels
-        
+        self.train = pd.read_csv(train)
         self.activation = funcs.Activation.get(activation_)
+        self.alpha = alpha
+        self.hidden_layers = layers[:-1]
+        self.output_layer = layers[-1]
 
     def init_weights(self, L_in, L_out):
         """
