@@ -37,14 +37,15 @@ class DigitClassifier:
             X = X.drop('label', axis=1)
 
         # TODO
+            # Append bias unit to every feature vector
             # feedforward
             # Compute cost
             # Compute output error
             # Backprop
             # Descend gradient
 
-    def predict(self, X=TEST):
-        X = pd.read_csv(X)
+    def predict(self, X=None):
+        X = X or pd.read_csv(TEST)
 
     def get_params(self):
         return self.params
@@ -53,14 +54,21 @@ class DigitClassifier:
         self.params[param] = value
         return self.params
 
-    def _feedforward(self):
-        pass
+    def _feedforward(self, X):
+        weighted_sums = []
+        activations = [X]
+        a = X  # init the first activation layer to the input X
+        for theta in self.weights:
+            z = np.dot(theta, a)
+            weighted_sums.append(z)
+            a = self.params['activation'](z)
+            activations.append(a)
 
-    def _compute_cost(self):
-        pass
+        return weighted_sums, activations
 
     def _backprop(self):
         pass
+
 
 ########################################################################################################################
 
