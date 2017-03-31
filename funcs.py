@@ -21,10 +21,22 @@ class Activation:
         sigma = 1/(1 + np.exp(-x))
         return sigma if not derivative else sigma * (1 - sigma(x))
 
-    class Cost:
-        def __init__(self):
-            self.options = {}
 
-        @classmethod
-        def get(cls, type_):
-            return cls.options[type_]
+class Cost:
+    def __init__(self):
+        self.options = {
+            'cross_entropy': self.cross_entropy,
+            'mse': self.mse,
+        }
+
+    @classmethod
+    def get(cls, type_):
+        return cls.options[type_]
+
+    @staticmethod
+    def cross_entropy(y, yhat):
+        return -1 * np.mean(y * np.log(yhat) + (1 - y) * np.log(1 - yhat))
+
+    @staticmethod
+    def mse(y, yhat):
+        return np.mean((yhat - y) ** 2) / 2
