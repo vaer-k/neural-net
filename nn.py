@@ -31,13 +31,14 @@ class DigitClassifier:
 
     def fit(self, X=None, y=None):
         if not X:
-            print('Fitting with default (MNIST) training data and labels...')
+            print("Fitting with default (MNIST) training data and labels...")
             X = pd.read_csv(TRAIN)
-            y = X['label']
-            X = X.drop('label', axis=1)
+            y = X["label"]
+            X = X.drop("label", axis=1)
+
+        X = X.assign(bias=pd.Series([1] * X.shape[0]).values)  # Add a unit feature to each vector for bias weight
 
         # TODO
-            # Append bias unit to every feature vector
             # feedforward
             # Compute cost
             # Compute output error
@@ -61,7 +62,7 @@ class DigitClassifier:
         for theta in self.weights:
             z = np.dot(theta, a)
             weighted_sums.append(z)
-            a = self.params['activation'](z)
+            a = self.params["activation"](z)
             activations.append(a)
 
         return weighted_sums, activations
