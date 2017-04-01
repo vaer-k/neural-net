@@ -1,4 +1,5 @@
 import pdb
+import random
 import neural_funcs
 import numpy as np
 import pandas as pd
@@ -8,28 +9,38 @@ TRAIN = "./raw_data/train.csv"
 
 
 class DigitClassifier:
-    def __init__(self, activation_="logistic", cost="mse", alpha=0.5, lamda=0.5, layers=None, weight_init="epsilon"):
-        """
-        :param layers: A list containing the number of units in each layer.
-        The last integer element is considered the output layer
-        :param activation_: The activation function to be used. Can be
-        "logistic" or "tanh"
-        """
+    """
+    :param layers: A list containing the number of units in each layer.
+    The last integer element is considered the output layer
+    :param activation_: The activation function to be used. Can be
+    "logistic" or "tanh"
+    """
+    def __init__(self,
+                 activation_="logistic",
+                 cost="mse",
+                 alpha=0.5,
+                 lamda=0.5,
+                 epochs=10,
+                 layers=None,
+                 batch_size=100,
+                 weight_init="epsilon"):
+
         layers = layers or [5, 10]  # Default to one hidden layer with 5 units and one 10 unit output layer
 
         if len(layers) < 2:
             raise TypeError('The layers arg should be a list containing at least two integers')
 
         self.weights = [neural_funcs.Weight.get(weight_init)(x, y) for x, y in zip(layers[:-1], layers[1:])]
-        self.epoch = 0
         self._params = {
             "activation": neural_funcs.Activation.get(activation_),
             "cost": neural_funcs.Cost.get(cost),
             "alpha": alpha,
             "lamda": lamda,
+            "epochs": epochs,
             "num_layers": len(layers),
             "hidden_layers": layers[:-1],
             "output_layer": layers[-1],
+            "batch_size": batch_size,
             "weight_init": neural_funcs.get(weight_init)
         }
 
@@ -37,12 +48,11 @@ class DigitClassifier:
         if not X:
             print("Fitting with default (MNIST) training data and labels...")
             X = pd.read_csv(TRAIN)
-            y = X["label"]
-            X = X.drop("label", axis=1)
+            y = np.array([X["label"].as_matrix()])
+            X = X.drop("label", axis=1).as_matrix()
 
-        self.weights = [self.params["weight_init"](X.shape[0], self.params["hidden_layers"][0])] + self.weights
-
-        # TODO gradient descent
+        self.weights = [self.params["weight_init"](len(X), self.params["hidden_layers"][0])] + self.weights
+        self._sgd(X, y)
 
     def predict(self, X=None):
         X = X or pd.read_csv(TEST)
@@ -58,12 +68,12 @@ class DigitClassifier:
         self._params[key] = value
         return self._params
 
-    def _feedforward(self, X):
+    def _feedforward(self, x):
         weighted_sums = []
-        activations = [X]
-        a = X  # init the first activation layer to the input X
+        activations = [x]
+        a = x  # init the first activation layer to the input X
         for theta in self.weights:
-            a = self._add_bias(a)  # add bias term
+            a = np.insert(a, 0, 1)  # add bias term
             z = np.dot(theta, a)
             weighted_sums.append(z)
             a = self.params["activation"](z)
@@ -71,8 +81,8 @@ class DigitClassifier:
 
         return weighted_sums, activations
 
-    def _backprop(self, X, y):
-        weighted_sums, activations = self._feedforward(X)
+    def _backprop(self, x, y):
+        weighted_sums, activations = self._feedforward(x)
         nabla = [np.zeros(w.shape) for w in self.weights]
 
         # Use the output layer activations and weights to initialize error delta
@@ -87,12 +97,27 @@ class DigitClassifier:
 
         return nabla
 
-    @staticmethod
-    def _add_bias(self, X):
-        """Add a bias feature to each vector"""
-        bias_terms = pd.DataFrame.from_items([('bias', [1] * X.shape[0])])
-        X.insert(0, 'bias', bias_terms['bias'])
-        return X
+    def _sgd(self, X, y):
+        for i in xrange(self.params["epochs"]):
+            data = np.concatenate((y.T, X), axis=1)
+            data = np.random.permutation(data)
+            n = len(data)
+            batches = [data[m:m + self.params["batch_size"]]
+                       for m in xrange(0, n, self.params["batch_size"])]
+
+            for batch in batches:
+                y = data[:, 0]
+                X = data[:, 1:]
+                self._update_model(X, y)
+
+    def _update_model(self, X, y):
+        nabla = [np.zeros(w.shape) for w in self.weights]
+        for x in X:
+            delta_nabla = self.backprop(x, y)
+            nabla = [nw+dnw for nw, dnw in zip(nabla, delta_nabla)]
+
+        self.weights = [w-(self.params["alpha"]/len(mini_batch))*nw
+                        for w, nw in zip(self.weights, nabla)]
 
 
 ########################################################################################################################
