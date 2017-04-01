@@ -40,15 +40,17 @@ class DigitClassifier:
         # TODO gradient descent
 
     def predict(self, X=None):
-        X = self._add_bias(X or pd.read_csv(TEST))
+        X = X or pd.read_csv(TEST)
+        _, output = self._feedforward(X)
 
     @property
     def params(self):
         return self._params
 
     @params.setter
-    def params(self, param, value):
-        self.params[param] = value
+    def params(self, key_value):
+        key, value = key_value
+        self._params[key] = value
         return self._params
 
     def _feedforward(self, X):
