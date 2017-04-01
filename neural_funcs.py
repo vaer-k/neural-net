@@ -47,6 +47,7 @@ class Weight(Base):
     def __init__(self):
         self.options = {
             "epsilon": self.epsilon,
+            "gaussian": self.gaussian,
         }
 
     @staticmethod

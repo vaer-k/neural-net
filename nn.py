@@ -8,7 +8,7 @@ TRAIN = "./raw_data/train.csv"
 
 
 class DigitClassifier:
-    def __init__(self, activation_="logistic", cost="mse", alpha=0.5, lamda=0.5, layers=None):
+    def __init__(self, activation_="logistic", cost="mse", alpha=0.5, lamda=0.5, layers=None, weight_init="epsilon"):
         """
         :param layers: A list containing the number of units in each layer.
         The last integer element is considered the output layer
@@ -20,14 +20,17 @@ class DigitClassifier:
         if len(layers) < 2:
             raise TypeError('The layers arg should be a list containing at least two integers')
 
+        self.weights = [neural_funcs.Weight.get(weight_init)(x, y) for x, y in zip(layers[:-1], layers[1:])]
         self.epoch = 0
         self._params = {
             "activation": neural_funcs.Activation.get(activation_),
             "cost": neural_funcs.Cost.get(cost),
             "alpha": alpha,
             "lamda": lamda,
+            "num_layers": len(layers),
             "hidden_layers": layers[:-1],
             "output_layer": layers[-1],
+            "weight_init": neural_funcs.get(weight_init)
         }
 
     def fit(self, X=None, y=None):
@@ -36,6 +39,8 @@ class DigitClassifier:
             X = pd.read_csv(TRAIN)
             y = X["label"]
             X = X.drop("label", axis=1)
+
+        self.weights = [self.params["weight_init"](X.shape[0], self.params["hidden_layers"][0])] + self.weights
 
         # TODO gradient descent
 
@@ -68,15 +73,19 @@ class DigitClassifier:
 
     def _backprop(self, X, y):
         weighted_sums, activations = self._feedforward(X)
-        gradient = [np.zeros(w.shape) for w in self.weights]
+        nabla = [np.zeros(w.shape) for w in self.weights]
 
-        # Use the output layer activations and weights to compute output error delta
-        delta_out = self.params["cost"](y, activations[-1], derivative=True) * \
-                    self.params["activation"](weighted_sums[-1], derivative=True)
+        # Use the output layer activations and weights to initialize error delta
+        delta = self.params["cost"](y, activations[-1], derivative=True) * \
+                self.params["activation"](weighted_sums[-1], derivative=True)
 
-        # TODO
-        # backpropagate error
-        # Compute gradient
+        # Backpropagate error
+        for l in xrange(2, self.params["num_layers"]):
+            delta = np.dot(self.weights[-l + 1].transpose(), delta) * \
+                    self.params["activation"](weighted_sums[-l], derivative=True)
+            nabla[-l] = np.dot(delta, activations[-l - 1].transpose())
+
+        return nabla
 
     @staticmethod
     def _add_bias(self, X):
