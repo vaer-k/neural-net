@@ -19,7 +19,7 @@ class Activation:
     @staticmethod
     def logistic(x, derivative=False):
         sigma = 1/(1 + np.exp(-x))
-        return sigma if not derivative else sigma * (1 - sigma(x))
+        return sigma if not derivative else sigma * (1 - sigma)
 
 
 class Cost:
@@ -34,9 +34,9 @@ class Cost:
         return cls.options[type_]
 
     @staticmethod
-    def cross_entropy(y, yhat):
+    def cross_entropy(y, yhat, derivative=False):
         return -1 * np.mean(y * np.log(yhat) + (1 - y) * np.log(1 - yhat))
 
     @staticmethod
-    def mse(y, yhat):
-        return np.mean((yhat - y) ** 2) / 2
+    def mse(y, yhat, derivative=False):
+        return np.mean((yhat - y) ** 2) / 2 if not derivative else (yhat - y)

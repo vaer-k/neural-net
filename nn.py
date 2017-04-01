@@ -8,7 +8,7 @@ TRAIN = "./raw_data/train.csv"
 
 
 class DigitClassifier:
-    def __init__(self, activation_="logistic", alpha=0.5, lamda=0.5, layers=None):
+    def __init__(self, activation_="logistic", cost="mse", alpha=0.5, lamda=0.5, layers=None):
         """
         :param layers: A list containing the number of units in each layer.
         The last integer element is considered the output layer
@@ -21,8 +21,9 @@ class DigitClassifier:
             raise TypeError('The layers arg should be a list containing at least two integers')
 
         self.epoch = 0
-        self.params = {
+        self._params = {
             "activation": neural_funcs.Activation.get(activation_),
+            "cost": neural_funcs.Cost.get(cost),
             "alpha": alpha,
             "lamda": lamda,
             "hidden_layers": layers[:-1],
@@ -36,39 +37,51 @@ class DigitClassifier:
             y = X["label"]
             X = X.drop("label", axis=1)
 
-        X = X.assign(bias=pd.Series([1] * X.shape[0]).values)  # Add a unit feature to each vector for bias weight
+        X = self._add_bias(X)
 
-        # TODO
-            # feedforward
-            # Compute cost
-            # Compute output error
-            # Backprop
-            # Descend gradient
+        # TODO gradient descent
 
     def predict(self, X=None):
-        X = X or pd.read_csv(TEST)
+        X = self._add_bias(X or pd.read_csv(TEST))
 
-    def get_params(self):
-        return self.params
+    @property
+    def params(self):
+        return self._params
 
-    def set_param(self, param, value):
+    @params.setter
+    def params(self, param, value):
         self.params[param] = value
-        return self.params
+        return self._params
 
     def _feedforward(self, X):
-        weighted_sums = []
+        thetas = []
         activations = [X]
         a = X  # init the first activation layer to the input X
         for theta in self.weights:
             z = np.dot(theta, a)
-            weighted_sums.append(z)
+            thetas.append(z)
             a = self.params["activation"](z)
             activations.append(a)
 
-        return weighted_sums, activations
+        return thetas, activations
 
-    def _backprop(self):
-        pass
+    def _backprop(self, X, y):
+        thetas, activations = self._feedforward(X)
+
+        # Use the output layer activations and weights to compute output error delta
+        delta_out = self.params["cost"](y, activations[-1], derivative=True) * \
+                    self.params["activation"](thetas[-1], derivative=True)
+
+        # TODO
+        # backpropagate error
+        # Compute gradient
+
+    @staticmethod
+    def _add_bias(self, X):
+        """Add a bias feature to each vector"""
+        bias_terms = pd.DataFrame.from_items([('bias', [1] * X.shape[0])])
+        X.insert(0, 'bias', bias_terms['bias'])
+        return X
 
 
 ########################################################################################################################
