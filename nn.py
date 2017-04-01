@@ -37,8 +37,6 @@ class DigitClassifier:
             y = X["label"]
             X = X.drop("label", axis=1)
 
-        X = self._add_bias(X)
-
         # TODO gradient descent
 
     def predict(self, X=None):
@@ -57,8 +55,9 @@ class DigitClassifier:
         weighted_sums = []
         activations = [X]
         a = X  # init the first activation layer to the input X
-        for weight in self.weights:
-            z = np.dot(weight, a)
+        for theta in self.weights:
+            a = self._add_bias(a)  # add bias term
+            z = np.dot(theta, a)
             weighted_sums.append(z)
             a = self.params["activation"](z)
             activations.append(a)
