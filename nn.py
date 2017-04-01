@@ -1,5 +1,4 @@
 import pdb
-import random
 import neural_funcs
 import numpy as np
 import pandas as pd
@@ -106,58 +105,16 @@ class DigitClassifier:
                        for m in xrange(0, n, self.params["batch_size"])]
 
             for batch in batches:
-                y = data[:, 0]
-                X = data[:, 1:]
+                y = batch[:, 0]
+                X = batch[:, 1:]
                 self._update_model(X, y)
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]
-        for x in X:
-            delta_nabla = self.backprop(x, y)
-            nabla = [nw+dnw for nw, dnw in zip(nabla, delta_nabla)]
+        for i in xrange(len(X)):
+            delta_nabla = self.backprop(X[i], y[i])
+            nabla = [n + dn for n, dn in zip(nabla, delta_nabla)]
 
-        self.weights = [w-(self.params["alpha"]/len(mini_batch))*nw
-                        for w, nw in zip(self.weights, nabla)]
-
-
-########################################################################################################################
-
-def nnCostFunction(self, nn_params, X, y, lambda_):
-    """
-    Computes the cost and gradient of the neural network. The
-    parameters for the neural network are "unrolled" into the vector
-    nn_params and need to be converted back into the weight matrices.
-
-    The returned parameter grad should be a "unrolled" vector of the
-    partial derivatives of the neural network.
-    """
-
-    ## Initialize
-
-    theta1_size = self.hidden_layer_size * (self.input_layer_size + 1)
-    Theta1 = np.reshape(nn_params[0:theta1_size],
-                           (self.hidden_layer_size, self.input_layer_size + 1))
-    Theta2 = np.reshape(nn_params[theta1_size + 1:],
-                           (self.num_labels, self.hidden_layer_size + 1))
-
-    m = np.shape(X)[0]
-
-    J = 0
-    Theta1_grad = np.zeros(np.shape(Theta1))
-    Theta2_grad = np.zeros(np.shape(Theta2))
-
-    ## Feed forward from initial theta
-
-    # Add bias terms
-    X = np.concatenate((np.ones([m, 1]), X), axis=1)
-
-    # Compute activation of every node in hidden layer for every example
-    a2 = self.activation(np.dot(X, Theta1.T))
-
-
-
-
-
-
-    grad = np.concatenate(np.ravel(Theta1_grad), np.ravel(Theta2_grad))
-    return grad
+        # Update model weights
+        self.weights = [w - (self.params["alpha"] / len(X)) * n
+                        for w, n in zip(self.weights, nabla)]
