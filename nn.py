@@ -53,9 +53,9 @@ class DigitClassifier:
         self.weights = [self.params["weight_init"](len(X), self.params["hidden_layers"][0])] + self.weights
         self._sgd(X, y)
 
-    def predict(self, X=None):
-        X = X or pd.read_csv(TEST)
+    def predict(self, X):
         _, output = self._feedforward(X)
+        return output
 
     @property
     def params(self):
