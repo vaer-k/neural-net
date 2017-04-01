@@ -1,16 +1,21 @@
 import numpy as np
 
 
-class Activation:
+class Base:
+    def __init__(self):
+        self.options = {}
+
+    @classmethod
+    def get(cls, type_):
+        return cls.options[type_]
+
+
+class Activation(Base):
     def __init__(self):
         self.options = {
             "tanh": self.tanh,
             "logistic": self.logistic,
         }
-
-    @classmethod
-    def get(cls, type_):
-        return cls.options[type_]
 
     @staticmethod
     def tanh(x, derivative=False):
@@ -22,16 +27,12 @@ class Activation:
         return sigma if not derivative else sigma * (1 - sigma)
 
 
-class Cost:
+class Cost(Base):
     def __init__(self):
         self.options = {
             "cross_entropy": self.cross_entropy,
             "mse": self.mse,
         }
-
-    @classmethod
-    def get(cls, type_):
-        return cls.options[type_]
 
     @staticmethod
     def cross_entropy(y, yhat, derivative=False):
@@ -40,3 +41,24 @@ class Cost:
     @staticmethod
     def mse(y, yhat, derivative=False):
         return np.mean((yhat - y) ** 2) / 2 if not derivative else (yhat - y)
+
+
+class Weight(Base):
+    def __init__(self):
+        self.options = {
+            "epsilon": self.epsilon,
+        }
+
+    @staticmethod
+    def gaussian(L_in, L_out):
+        return np.random.randn(L_out, 1 + L_in)
+
+    @staticmethod
+    def epsilon(L_in, L_out):
+        """
+        Randomly initialize the weights of a layer with L_in incoming
+        connections and L_out outgoing connections. Note the addition
+        of space (the +1s) for the "bias" terms.
+        """
+        epsilon = np.sqrt(6) / np.sqrt(L_in + L_out)
+        return (np.random.random((L_out, 1 + L_in)) * 2 * epsilon) - epsilon

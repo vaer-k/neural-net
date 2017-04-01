@@ -54,23 +54,24 @@ class DigitClassifier:
         return self._params
 
     def _feedforward(self, X):
-        thetas = []
+        weighted_sums = []
         activations = [X]
         a = X  # init the first activation layer to the input X
-        for theta in self.weights:
-            z = np.dot(theta, a)
-            thetas.append(z)
+        for weight in self.weights:
+            z = np.dot(weight, a)
+            weighted_sums.append(z)
             a = self.params["activation"](z)
             activations.append(a)
 
-        return thetas, activations
+        return weighted_sums, activations
 
     def _backprop(self, X, y):
-        thetas, activations = self._feedforward(X)
+        weighted_sums, activations = self._feedforward(X)
+        gradient = [np.zeros(w.shape) for w in self.weights]
 
         # Use the output layer activations and weights to compute output error delta
         delta_out = self.params["cost"](y, activations[-1], derivative=True) * \
-                    self.params["activation"](thetas[-1], derivative=True)
+                    self.params["activation"](weighted_sums[-1], derivative=True)
 
         # TODO
         # backpropagate error
@@ -85,17 +86,6 @@ class DigitClassifier:
 
 
 ########################################################################################################################
-
-def init_weights(self, L_in, L_out):
-    """
-    Randomly initialize the weights of a layer with L_in incoming
-    connections and L_out outgoing connections. Note the addition
-    of space (the +1s) for the "bias" terms.
-    """
-
-    epsilon_init = np.sqrt(6) / np.sqrt(L_in + L_out)
-    return (np.random.random((L_out, 1 + L_in)) * 2 * epsilon_init) - epsilon_init
-
 
 def nnCostFunction(self, nn_params, X, y, lambda_):
     """
