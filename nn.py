@@ -53,9 +53,13 @@ class DigitClassifier:
         self.weights = [self.params["weight_init"](len(X), self.params["hidden_layers"][0])] + self.weights
         self._sgd(X, y)
 
-    def predict(self, X):
-        _, output = self._feedforward(X)
-        return output
+    def predict(self, x):
+        _, output = self._feedforward(x)
+        return np.argmax(output)
+
+    def evaluate(self, test=None):
+        test_results = [(self.predict(row[1:]), row[0]) for row in test]
+        return sum(int(x == y) for (x, y) in test_results) / len(test_results)
 
     @property
     def params(self):
@@ -108,6 +112,8 @@ class DigitClassifier:
                 y = batch[:, 0]
                 X = batch[:, 1:]
                 self._update_model(X, y)
+
+            self.evaluate(data)
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]
