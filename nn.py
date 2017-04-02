@@ -17,18 +17,19 @@ class DigitClassifier:
     def __init__(self,
                  activation_="logistic",
                  cost="mse",
-                 alpha=0.5,
+                 alpha=3.0,
                  lamda=0.5,
-                 epochs=10,
+                 epochs=30,
                  layers=None,
-                 batch_size=100,
-                 weight_init="epsilon"):
+                 batch_size=10,
+                 weight_init="gaussian"):
 
-        layers = layers or [5, 10]  # Default to one hidden layer with 5 units and one 10 unit output layer
+        layers = layers or [25, 10]  # Default to one hidden layer with 25 units and one 10 unit output layer
 
         if len(layers) < 2:
             raise TypeError('The layers arg should be a list containing at least two integers')
 
+        self.curr_cost = 0
         self.weights = [neural_funcs.Weight().get(weight_init)(x, y) for x, y in zip(layers[:-1], layers[1:])]
         self._params = {
             "activation": neural_funcs.Activation().get(activation_),
@@ -36,7 +37,7 @@ class DigitClassifier:
             "alpha": alpha,
             "lamda": lamda,
             "epochs": epochs,
-            "num_layers": len(layers),
+            "num_layers": len(layers) + 1,
             "hidden_layers": layers[:-1],
             "output_layer": layers[-1],
             "batch_size": batch_size,
@@ -59,7 +60,8 @@ class DigitClassifier:
 
     def evaluate(self, test=None):
         test_results = [(self.predict(row[1:]), row[0]) for row in test]
-        return sum(int(x == y) for (x, y) in test_results) / len(test_results)
+        print('Cost: {0}'.format(self.curr_cost))
+        return sum(int(x == y) for (x, y) in test_results) / float(len(test_results))
 
     @property
     def params(self):
@@ -89,16 +91,31 @@ class DigitClassifier:
         nabla = [np.zeros(w.shape) for w in self.weights]
 
         # Use the output layer activations and weights to initialize error delta
-        delta = self.params["cost"](y, activations[-1], derivative=True) * \
+        delta = self.params["cost"](self._label(y), activations[-1], derivative=True) * \
                 self.params["activation"](weighted_sums[-1], derivative=True)
+
+        delta = np.array([delta]).T
+        a = np.array([np.insert(activations[-2], 0, 1)]).T
+        nabla[-1] = np.dot(delta, a.T)
+
+        delta = np.insert(delta, 0, 1)
+        delta = np.array([delta]).T
 
         # Backpropagate error
         for l in xrange(2, self.params["num_layers"]):
-            delta = np.dot(self.weights[-l + 1].transpose(), delta) * \
-                    self.params["activation"](weighted_sums[-l], derivative=True)
-            nabla[-l] = np.dot(delta, activations[-l - 1].transpose())
+            delta = np.dot(self.weights[-l + 1].transpose(), delta[1:]) \
+                    * np.array([np.insert(self.params["activation"](weighted_sums[-l], derivative=True), 0, 1)]).T
 
+            a = np.array([np.insert(activations[-l - 1], 0, 1)]).transpose()
+            nabla[-l] = np.dot(delta[1:], a.T)
+
+        self.curr_cost = self.params["cost"](self._label(y), activations[-1])
         return nabla
+
+    def _label(self, y):
+        label = np.zeros(self.params["output_layer"])
+        label[y] = 1
+        return label
 
     def _sgd(self, X, y):
         data = np.concatenate((y.T, X), axis=1)
@@ -113,14 +130,14 @@ class DigitClassifier:
                 X = batch[:, 1:]
                 self._update_model(X, y)
 
-            print(self.evaluate(data))
+            print('Percent correct: {0} at epoch {1}\n'.format(self.evaluate(data), i + 1))
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]
-        for i in xrange(len(X)):
+        m = len(X)
+        for i in xrange(m):
             delta_nabla = self._backprop(X[i], y[i])
             nabla = [n + dn for n, dn in zip(nabla, delta_nabla)]
 
         # Update model weights
-        self.weights = [w - (self.params["alpha"] / len(X)) * n
-                        for w, n in zip(self.weights, nabla)]
+        self.weights = [w - (self.params["alpha"] / m) * n for w, n in zip(self.weights, nabla)]
