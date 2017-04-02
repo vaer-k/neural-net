@@ -52,7 +52,7 @@ class Weight(Base):
 
     @staticmethod
     def gaussian(L_in, L_out):
-        return np.random.randn(L_out, 1 + L_in)
+        return np.random.randn(L_out, L_in)
 
     @staticmethod
     def epsilon(L_in, L_out):
@@ -62,4 +62,4 @@ class Weight(Base):
         of space (the +1s) for the "bias" terms.
         """
         epsilon = np.sqrt(6) / np.sqrt(L_in + L_out)
-        return (np.random.random((L_out, 1 + L_in)) * 2 * epsilon) - epsilon
+        return (np.random.random((L_out, L_in)) * 2 * epsilon) - epsilon

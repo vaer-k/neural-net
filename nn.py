@@ -30,6 +30,7 @@ class DigitClassifier:
             raise TypeError('The layers arg should be a list containing at least two integers')
 
         self.curr_cost = 0
+        self.biases = [np.random.randn(y, 1) for y in layers]
         self.weights = [neural_funcs.Weight().get(weight_init)(x, y) for x, y in zip(layers[:-1], layers[1:])]
         self._params = {
             "activation": neural_funcs.Activation().get(activation_),
@@ -55,7 +56,7 @@ class DigitClassifier:
         self._sgd(X, y)
 
     def predict(self, x):
-        _, output = self._feedforward(x)
+        output = self._feedforward(x)
         return np.argmax(output[-1])
 
     def evaluate(self, test=None):
@@ -74,43 +75,46 @@ class DigitClassifier:
         return self._params
 
     def _feedforward(self, x):
-        weighted_sums = []
-        activations = [x]
-        a = x  # init the first activation layer to the input X
-        for theta in self.weights:
-            a = np.insert(a, 0, 1)  # add bias term
-            z = np.dot(theta, a)
-            weighted_sums.append(z)
-            a = self.params["activation"](z)
-            activations.append(a)
-
-        return weighted_sums, activations
+        a = x
+        for b, w in zip(self.biases, self.weights):
+            a = self.params["activation"](np.dot(w, a)+b)
+        return a
 
     def _backprop(self, x, y):
-        weighted_sums, activations = self._feedforward(x)
-        nabla = [np.zeros(w.shape) for w in self.weights]
+        """Return a tuple ``(nabla_b, nabla_w)`` representing the
+        gradient for the cost function C_x.  ``nabla_b`` and
+        ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
+        to ``self.biases`` and ``self.weights``."""
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+        # feedforward
+        activation = np.array([x]).T
+        activations = [activation]  # list to store all the activations, layer by layer
+        zs = []  # list to store all the z vectors, layer by layer
+        for b, w in zip(self.biases, self.weights):
+            z = np.dot(w, activation)+b
+            zs.append(z)
+            activation = self.params["activation"](z)
+            activations.append(activation)
 
-        # Use the output layer activations and weights to initialize error delta
-        delta = self.params["cost"](self._label(y), activations[-1], derivative=True) * \
-                self.params["activation"](weighted_sums[-1], derivative=True)
-
-        delta = np.array([delta]).T
-        a = np.array([np.insert(activations[-2], 0, 1)]).T
-        nabla[-1] = np.dot(delta, a.T)
-
-        delta = np.insert(delta, 0, 1)
-        delta = np.array([delta]).T
-
-        # Backpropagate error
+        # backward pass
+        delta = self.params["cost"](y, activations[-1], derivative=True) * \
+            self.params["activation"](zs[-1], derivative=True)
+        nabla_b[-1] = delta
+        nabla_w[-1] = np.dot(delta, activations[-2].transpose())
+        # Note that the variable l in the loop below is used a little
+        # differently to the notation in Chapter 2 of the book.  Here,
+        # l = 1 means the last layer of neurons, l = 2 is the
+        # second-last layer, and so on.  It's a renumbering of the
+        # scheme in the book, used here to take advantage of the fact
+        # that Python can use negative indices in lists.
         for l in xrange(2, self.params["num_layers"]):
-            delta = np.dot(self.weights[-l + 1].transpose(), delta[1:]) \
-                    * np.array([np.insert(self.params["activation"](weighted_sums[-l], derivative=True), 0, 1)]).T
-
-            a = np.array([np.insert(activations[-l - 1], 0, 1)]).transpose()
-            nabla[-l] = np.dot(delta[1:], a.T)
-
-        self.curr_cost = self.params["cost"](self._label(y), activations[-1])
-        return nabla
+            z = zs[-l]
+            sp = self.params["activation"](z, derivative=True)
+            delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
+            nabla_b[-l] = delta
+            nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
+        return nabla_b, nabla_w
 
     def _label(self, y):
         label = np.zeros(self.params["output_layer"])
@@ -133,11 +137,23 @@ class DigitClassifier:
             print('Percent correct: {0} at epoch {1}\n'.format(self.evaluate(data), i + 1))
 
     def _update_model(self, X, y):
-        nabla = [np.zeros(w.shape) for w in self.weights]
+        # nabla = [np.zeros(w.shape) for w in self.weights]
+        # m = len(X)
+        # for i in xrange(m):
+        #     delta_nabla = self._backprop(X[i], y[i])
+        #     nabla = [n + dn for n, dn in zip(nabla, delta_nabla)]
+        #
+        # Update model weights
+        # self.weights = [w - (self.params["alpha"] / m) * n for w, n in zip(self.weights, nabla)]
+
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
         m = len(X)
         for i in xrange(m):
-            delta_nabla = self._backprop(X[i], y[i])
-            nabla = [n + dn for n, dn in zip(nabla, delta_nabla)]
-
-        # Update model weights
-        self.weights = [w - (self.params["alpha"] / m) * n for w, n in zip(self.weights, nabla)]
+            delta_nabla_b, delta_nabla_w = self._backprop(X[i], y[i])
+            nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
+            nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+        self.weights = [w-(self.params["alpha"]/m)*nw
+                        for w, nw in zip(self.weights, nabla_w)]
+        self.biases = [b-(self.params["alpha"]/m)*nb
+                       for b, nb in zip(self.biases, nabla_b)]
