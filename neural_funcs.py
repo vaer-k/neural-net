@@ -5,7 +5,6 @@ class Base:
     def __init__(self):
         self.options = {}
 
-    @classmethod
     def get(cls, type_):
         return cls.options[type_]
 

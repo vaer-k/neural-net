@@ -29,10 +29,10 @@ class DigitClassifier:
         if len(layers) < 2:
             raise TypeError('The layers arg should be a list containing at least two integers')
 
-        self.weights = [neural_funcs.Weight.get(weight_init)(x, y) for x, y in zip(layers[:-1], layers[1:])]
+        self.weights = [neural_funcs.Weight().get(weight_init)(x, y) for x, y in zip(layers[:-1], layers[1:])]
         self._params = {
-            "activation": neural_funcs.Activation.get(activation_),
-            "cost": neural_funcs.Cost.get(cost),
+            "activation": neural_funcs.Activation().get(activation_),
+            "cost": neural_funcs.Cost().get(cost),
             "alpha": alpha,
             "lamda": lamda,
             "epochs": epochs,
@@ -40,7 +40,7 @@ class DigitClassifier:
             "hidden_layers": layers[:-1],
             "output_layer": layers[-1],
             "batch_size": batch_size,
-            "weight_init": neural_funcs.get(weight_init)
+            "weight_init": neural_funcs.Weight().get(weight_init)
         }
 
     def fit(self, X=None, y=None):
@@ -50,12 +50,12 @@ class DigitClassifier:
             y = np.array([X["label"].as_matrix()])
             X = X.drop("label", axis=1).as_matrix()
 
-        self.weights = [self.params["weight_init"](len(X), self.params["hidden_layers"][0])] + self.weights
+        self.weights = [self.params["weight_init"](X.shape[1], self.params["hidden_layers"][0])] + self.weights
         self._sgd(X, y)
 
     def predict(self, x):
         _, output = self._feedforward(x)
-        return np.argmax(output)
+        return np.argmax(output[-1])
 
     def evaluate(self, test=None):
         test_results = [(self.predict(row[1:]), row[0]) for row in test]
@@ -101,10 +101,10 @@ class DigitClassifier:
         return nabla
 
     def _sgd(self, X, y):
+        data = np.concatenate((y.T, X), axis=1)
+        n = len(data)
         for i in xrange(self.params["epochs"]):
-            data = np.concatenate((y.T, X), axis=1)
             data = np.random.permutation(data)
-            n = len(data)
             batches = [data[m:m + self.params["batch_size"]]
                        for m in xrange(0, n, self.params["batch_size"])]
 
@@ -113,12 +113,12 @@ class DigitClassifier:
                 X = batch[:, 1:]
                 self._update_model(X, y)
 
-            self.evaluate(data)
+            print(self.evaluate(data))
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]
         for i in xrange(len(X)):
-            delta_nabla = self.backprop(X[i], y[i])
+            delta_nabla = self._backprop(X[i], y[i])
             nabla = [n + dn for n, dn in zip(nabla, delta_nabla)]
 
         # Update model weights
