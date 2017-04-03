@@ -17,9 +17,9 @@ class DigitClassifier:
     def __init__(self,
                  activation_="logistic",
                  cost="mse",
-                 alpha=3.0,
+                 alpha=0.05,
                  lamda=0.5,
-                 epochs=30,
+                 epochs=50,
                  layers=None,
                  batch_size=10,
                  weight_init="gaussian"):
@@ -103,10 +103,10 @@ class DigitClassifier:
 
         # Backpropagate error
         for l in xrange(2, self.params["num_layers"]):
-            delta = np.dot(self.weights[-l + 1].transpose(), delta[1:]) \
+            delta = np.dot(self.weights[-l + 1].T, delta[1:]) \
                     * np.array([np.insert(self.params["activation"](weighted_sums[-l], derivative=True), 0, 1)]).T
 
-            a = np.array([np.insert(activations[-l - 1], 0, 1)]).transpose()
+            a = np.array([np.insert(activations[-l - 1], 0, 1)]).T
             nabla[-l] = np.dot(delta[1:], a.T)
 
         self.curr_cost = self.params["cost"](self._label(y), activations[-1])

@@ -24,7 +24,11 @@ class Activation(Base):
     @staticmethod
     def logistic(x, derivative=False):
         sigma = 1/(1 + np.exp(-x))
-        return sigma if not derivative else sigma * (1 - sigma)
+
+        if derivative:
+            return sigma * (1 - sigma)
+
+        return sigma
 
 
 class Cost(Base):
@@ -40,7 +44,10 @@ class Cost(Base):
 
     @staticmethod
     def mse(y, yhat, derivative=False):
-        return np.mean((yhat - y) ** 2) / 2 if not derivative else (yhat - y)
+        if derivative:
+            return yhat - y
+
+        return np.mean((yhat - y) ** 2) / 2
 
 
 class Weight(Base):
