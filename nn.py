@@ -17,7 +17,7 @@ class DigitClassifier:
     def __init__(self,
                  activation_="logistic",
                  cost="mse",
-                 alpha=0.05,
+                 alpha=0.2,
                  lamda=0.5,
                  epochs=50,
                  layers=None,
@@ -60,8 +60,8 @@ class DigitClassifier:
 
     def evaluate(self, test=None):
         test_results = [(self.predict(row[1:]), row[0]) for row in test]
-        print('Cost: {0}'.format(self.curr_cost))
-        return sum(int(x == y) for (x, y) in test_results) / float(len(test_results))
+        print('Cost: {0}'.format(round(self.curr_cost, 3)))
+        return round(sum(int(x == y) for (x, y) in test_results) / float(len(test_results)), 3)
 
     @property
     def params(self):
@@ -119,18 +119,24 @@ class DigitClassifier:
 
     def _sgd(self, X, y):
         data = np.concatenate((y.T, X), axis=1)
-        n = len(data)
+        training_length = int(len(data) * .9)
+        train = data[:training_length]
+        test = data[training_length:]
+
+        n = len(train)
         for i in xrange(self.params["epochs"]):
-            data = np.random.permutation(data)
-            batches = [data[m:m + self.params["batch_size"]]
+            train = np.random.permutation(train)
+            batches = [train[m:m + self.params["batch_size"]]
                        for m in xrange(0, n, self.params["batch_size"])]
 
+            print('Updating model with alpha {0}'.format(round(self.params["alpha"], 2)))
             for batch in batches:
                 y = batch[:, 0]
                 X = batch[:, 1:]
                 self._update_model(X, y)
 
-            print('Percent correct: {0} at epoch {1}\n'.format(self.evaluate(data), i + 1))
+            self.params["alpha"] *= .95
+            print('Percent correct: {0}% at epoch #{1}\n'.format(self.evaluate(test) * 100, i + 1))
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]
