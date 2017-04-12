@@ -17,12 +17,12 @@ class DigitClassifier:
     def __init__(self,
                  activation_="logistic",
                  cost="mse",
-                 alpha=0.2,
+                 alpha=0.1,
                  lamda=0.5,
                  epochs=50,
                  layers=None,
                  batch_size=10,
-                 weight_init="gaussian"):
+                 weight_init="epsilon"):
 
         layers = layers or [25, 10]  # Default to one hidden layer with 25 units and one 10 unit output layer
 
@@ -60,7 +60,6 @@ class DigitClassifier:
 
     def evaluate(self, test=None):
         test_results = [(self.predict(row[1:]), row[0]) for row in test]
-        print('Cost: {0}'.format(round(self.curr_cost, 3)))
         return round(sum(int(x == y) for (x, y) in test_results) / float(len(test_results)), 3)
 
     @property
@@ -136,7 +135,12 @@ class DigitClassifier:
                 self._update_model(X, y)
 
             self.params["alpha"] *= .95
-            print('Percent correct: {0}% at epoch #{1}\n'.format(self.evaluate(test) * 100, i + 1))
+            print('Epoch #{0} results:'.format(i + 1))
+            print('\tTrain set accuracy: {0}%'.format(self.evaluate(train) * 100))
+            print('\tTest set accuracy: {0}%\n'.format(self.evaluate(test) * 100))
+
+            if not i % 5:
+                print('Current cost: {0}\n'.format(round(self.curr_cost, 3)))
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]

@@ -57,9 +57,18 @@ class Weight(Base):
             "gaussian": self.gaussian,
         }
 
-    @staticmethod
-    def gaussian(L_in, L_out):
-        return np.random.randn(L_out, 1 + L_in)
+    def normalize(self, weights):
+        min = np.min(weights)
+        max = np.max(weights)
+        normalize_x = lambda x: (x - min) / (max - min)
+        for i, row in enumerate(weights):
+            for j, col in enumerate(row):
+                weights[i][j] = normalize_x(col)
+
+        return weights
+
+    def gaussian(self, L_in, L_out, normalize=False):
+        return self.normalize(np.random.randn(L_out, 1 + L_in)) if normalize else np.random.randn(L_out, 1 + L_in)
 
     @staticmethod
     def epsilon(L_in, L_out):
