@@ -17,9 +17,9 @@ class DigitClassifier:
     def __init__(self,
                  activation_="logistic",
                  cost="mse",
-                 alpha=0.1,
+                 alpha=0.05,
                  lamda=0.5,
-                 epochs=50,
+                 epochs=30,
                  layers=None,
                  batch_size=10,
                  weight_init="epsilon"):
@@ -90,8 +90,8 @@ class DigitClassifier:
         nabla = [np.zeros(w.shape) for w in self.weights]
 
         # Use the output layer activations and weights to initialize error delta
-        delta = self.params["cost"](self._label(y), activations[-1], derivative=True) * \
-                self.params["activation"](weighted_sums[-1], derivative=True)
+        activ_deriv = self.params["activation"](weighted_sums[-1], derivative=True)
+        delta = self.params["cost"](self._label(y), activations[-1], derivative=True, activation_deriv=activ_deriv)
 
         delta = np.array([delta]).T
         a = np.array([np.insert(activations[-2], 0, 1)]).T
@@ -128,13 +128,18 @@ class DigitClassifier:
             batches = [train[m:m + self.params["batch_size"]]
                        for m in xrange(0, n, self.params["batch_size"])]
 
-            print('Updating model with alpha {0}'.format(round(self.params["alpha"], 2)))
+            print('Updating model with alpha {0}'.format(round(self.params["alpha"], 3)))
             for batch in batches:
                 y = batch[:, 0]
                 X = batch[:, 1:]
                 self._update_model(X, y)
 
-            self.params["alpha"] *= .95
+            self.params["alpha"] *= .90
+
+            # I've discovered empirically that steps smaller than this aren't that helpful in this data
+            if self.params["alpha"] < 0.005:
+                self.params["alpha"] = 0.005
+
             print('Epoch #{0} results:'.format(i + 1))
             print('\tTrain set accuracy: {0}%'.format(self.evaluate(train) * 100))
             print('\tTest set accuracy: {0}%\n'.format(self.evaluate(test) * 100))
