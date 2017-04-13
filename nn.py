@@ -18,7 +18,7 @@ class DigitClassifier:
                  activation_="logistic",
                  cost="mse",
                  alpha=0.05,
-                 lamda=0.5,
+                 lamda=0.005,
                  epochs=30,
                  layers=None,
                  batch_size=10,
@@ -155,4 +155,9 @@ class DigitClassifier:
             nabla = [n + dn for n, dn in zip(nabla, delta_nabla)]
 
         # Update model weights
-        self.weights = [w - (self.params["alpha"] / m) * n for w, n in zip(self.weights, nabla)]
+        alpha = self.params["alpha"]
+        lamda = self.params["lamda"]
+        self.weights = [w - (alpha / m) * n for w, n in zip(self.weights, nabla)]
+
+        for theta in self.weights:
+            theta[:, 1:] = [w - ((alpha * lamda) / m) * w for w in theta[:, 1:]]
