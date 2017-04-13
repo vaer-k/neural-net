@@ -109,6 +109,10 @@ class DigitClassifier:
             nabla[-l] = np.dot(delta[1:], a.T)
 
         self.curr_cost = self.params["cost"](self._label(y), activations[-1])
+
+        if self.params["lamda"] > 0:
+            self.curr_cost += np.sum([np.sum(np.square(theta[:, 1:])) for theta in self.weights])
+
         return nabla
 
     def _label(self, y):
