@@ -19,7 +19,7 @@ class Activation(Base):
 
     @staticmethod
     def tanh(x, derivative=False):
-        return np.tanh(x) if not derivative else 1.0 - np.tanh(x) ** 2
+        return np.tanh(x) if not derivative else 1.0 - np.square(np.tanh(x))
 
     @staticmethod
     def logistic(x, derivative=False):
@@ -39,13 +39,16 @@ class Cost(Base):
         }
 
     @staticmethod
-    def cross_entropy(y, yhat, derivative=False):
-        return -1 * np.mean(y * np.log(yhat) + (1 - y) * np.log(1 - yhat))
-
-    @staticmethod
-    def mse(y, yhat, derivative=False):
+    def cross_entropy(y, yhat, derivative=False, **kwargs):
         if derivative:
             return yhat - y
+
+        return np.mean(np.nan_to_num(-y * np.log(yhat) - (1 - y) * np.log(1 - yhat)))
+
+    @staticmethod
+    def mse(y, yhat, derivative=False, activation_deriv=None):
+        if derivative:
+            return (yhat - y) * activation_deriv
 
         return np.mean((yhat - y) ** 2) / 2
 
@@ -68,7 +71,8 @@ class Weight(Base):
         return weights
 
     def gaussian(self, L_in, L_out, normalize=False):
-        return self.normalize(np.random.randn(L_out, 1 + L_in)) if normalize else np.random.randn(L_out, 1 + L_in)
+        # return self.normalize(np.random.randn(L_out, 1 + L_in)) if normalize else np.random.randn(L_out, 1 + L_in)
+        return np.random.randn(L_out, 1 + L_in) / np.sqrt(L_in)
 
     @staticmethod
     def epsilon(L_in, L_out):
