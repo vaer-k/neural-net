@@ -9,9 +9,7 @@ TRAIN = "./raw_data/train.csv"
 """
 TODO
 1) histogram of class representation
-2) F1 scores
 3) hyperparameter tuning and report visualization
-4) seed randomness
 """
 
 
@@ -27,9 +25,10 @@ class DigitClassifier:
                  cost="mse",
                  alpha=0.05,
                  lamda=0.005,
-                 epochs=30,
+                 epochs=1,
                  layers=None,
                  batch_size=10,
+                 evaluate=True,
                  weight_init="epsilon"):
 
         layers = layers or [25, 10]  # Default to one hidden layer with 25 units and one 10 unit output layer
@@ -41,6 +40,7 @@ class DigitClassifier:
         self.curr_cost = 0
         self.weights = [neural_funcs.Weight().get(weight_init)(x, y) for x, y in zip(layers[:-1], layers[1:])]
         self._params = {
+            "evaluate": evaluate,
             "activation": neural_funcs.Activation().get(activation_),
             "cost": neural_funcs.Cost().get(cost),
             "alpha": alpha,
@@ -132,33 +132,54 @@ class DigitClassifier:
         train = data[:training_length]
         test = data[training_length:]
 
-        n = len(train)
-        for i in xrange(self.params["epochs"]):
-            train = np.random.permutation(train)
-            batches = [train[m:m + self.params["batch_size"]]
-                       for m in xrange(0, n, self.params["batch_size"])]
+        cross_val_size = int(len(train) * .10)
 
-            print('Updating model with alpha {0}'.format(round(self.params["alpha"], 3)))
-            for batch in batches:
-                y = batch[:, 0]
-                X = batch[:, 1:]
-                self._update_model(X, y)
+        for cross_start in xrange(0, len(train), cross_val_size):
+            cross_end = cross_start + cross_val_size
+            cross_val = train[cross_start:cross_end]
+            train = np.concatenate((train[:cross_start], train[cross_end:]))
 
-            if self.params["alpha"] < 0.01:
-                self.params["alpha"] *= 0.95
-            else:
-                self.params["alpha"] *= .90
+            n = len(train)
+            for i in xrange(self.params["epochs"]):
+                train = np.random.permutation(train)
+                batches = [train[m:m + self.params["batch_size"]]
+                           for m in xrange(0, n, self.params["batch_size"])]
 
-            self.curr_cost = self._compute_cost(train)
+                print('Updating model with alpha {0}'.format(round(self.params["alpha"], 3)))
+                for batch in batches:
+                    y = batch[:, 0]
+                    X = batch[:, 1:]
+                    self._update_model(X, y)
 
-            if not i % 5:
-                print('Current cost: {0}\n'.format(round(self.curr_cost, 3)))
+                if self.params["alpha"] < 0.01:
+                    self.params["alpha"] *= 0.95
+                else:
+                    self.params["alpha"] *= .90
 
-            print('Epoch #{0} results:'.format(i + 1))
-            print('\tTrain set accuracy: {0}%'.format(self.evaluate(train)[0] * 100))
-            print('\tTrain set F1: {0}'.format(self.evaluate(train)[1]))
-            print('\tTest set accuracy: {0}%'.format(self.evaluate(test)[0] * 100))
-            print('\tTest set F1: {0}\n'.format(self.evaluate(test)[1]))
+                self.curr_cost = self._compute_cost(train)
+
+                if not i % 5:
+                    print('Current cost: {0}\n'.format(round(self.curr_cost, 3)))
+
+                if self.params["evaluate"]:
+                    train_accu = self.evaluate(train)[0] * 100
+                    train_f1 = self.evaluate(train)[1]
+                    cross_accu = self.evaluate(cross_val)[0] * 100
+                    cross_f1 = self.evaluate(cross_val)[1]
+
+                    print('Epoch #{0} results:'.format(i + 1))
+                    print('\tTrain set:')
+                    print('\t    accuracy: {0}%'.format(train_accu))
+                    print('\t    F1: {0}'.format(train_f1))
+                    print('\tCross validation set:')
+                    print('\t    accuracy: {0}%'.format(cross_accu))
+                    print('\t    F1: {0}'.format(cross_f1))
+
+        test_accu = self.evaluate(test)[0] * 100
+        test_f1 = self.evaluate(test)[1]
+        print('\tTest set:')
+        print('\t    accuracy: {0}%'.format(test_accu))
+        print('\t    F1: {0}\n'.format(test_f1))
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]
