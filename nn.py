@@ -6,6 +6,14 @@ import pandas as pd
 TEST = "./raw_data/test.csv"
 TRAIN = "./raw_data/train.csv"
 
+"""
+TODO
+1) histogram of class representation
+2) F1 scores
+3) hyperparameter tuning and report visualization
+4) seed randomness
+"""
+
 
 class DigitClassifier:
     """
@@ -59,9 +67,11 @@ class DigitClassifier:
         _, output = self._feedforward(x)
         return np.argmax(output[-1])
 
-    def evaluate(self, test=None):
+    def evaluate(self, test):
         test_results = [(self.predict(row[1:]), row[0]) for row in test]
-        return round(sum(int(x == y) for (x, y) in test_results) / float(len(test_results)), 3)
+        accuracy = neural_funcs.Evaluation.accuracy(test_results)
+        f1 = neural_funcs.Evaluation.f1(test_results)
+        return accuracy, f1
 
     @property
     def params(self):
@@ -145,8 +155,10 @@ class DigitClassifier:
                 print('Current cost: {0}\n'.format(round(self.curr_cost, 3)))
 
             print('Epoch #{0} results:'.format(i + 1))
-            print('\tTrain set accuracy: {0}%'.format(self.evaluate(train) * 100))
-            print('\tTest set accuracy: {0}%\n'.format(self.evaluate(test) * 100))
+            print('\tTrain set accuracy: {0}%'.format(self.evaluate(train)[0] * 100))
+            print('\tTrain set F1: {0}'.format(self.evaluate(train)[1]))
+            print('\tTest set accuracy: {0}%'.format(self.evaluate(test)[0] * 100))
+            print('\tTest set F1: {0}\n'.format(self.evaluate(test)[1]))
 
     def _update_model(self, X, y):
         nabla = [np.zeros(w.shape) for w in self.weights]

@@ -1,5 +1,6 @@
 import pdb
 import numpy as np
+from collections import defaultdict
 
 
 class Base:
@@ -53,6 +54,40 @@ class Cost(Base):
         return np.mean((yhat - y) ** 2) / 2
 
 
+class Evaluation(Base):
+    def __init__(self):
+        self.options = {
+            "accuracy": self.accuracy,
+            "f1": self.f1
+        }
+
+    @staticmethod
+    def accuracy(test_result):
+        return round(sum(int(x == y) for x, y in test_result) / float(len(test_result)), 3)
+
+    @staticmethod
+    def f1(test_result):
+        metrics = {class_: defaultdict(float) for class_ in xrange(0, 10)}
+        for class_, counts in metrics.iteritems():
+            for result in test_result:
+                if result[0] != class_ and result[1] != class_:
+                    continue
+
+                counts["tru_pos"] += int(result[0] == result[1])
+                counts["pred_pos"] += int(result[0] == class_)
+                counts["cond_pos"] += int(result[1] == class_)
+
+            try:
+                precision = counts["tru_pos"] / counts["pred_pos"]
+            except ZeroDivisionError:
+                precision = 0.0
+
+            recall = counts["tru_pos"] / counts["cond_pos"]
+            counts["f1"] = 2 * (precision * recall) / (precision + recall)
+
+        return round(np.mean([counts["f1"] for _, counts in metrics.iteritems()]), 3)
+
+
 class Weight(Base):
     def __init__(self):
         self.options = {
@@ -60,7 +95,8 @@ class Weight(Base):
             "gaussian": self.gaussian,
         }
 
-    def normalize(self, weights):
+    @staticmethod
+    def normalize(weights):
         min = np.min(weights)
         max = np.max(weights)
         normalize_x = lambda x: (x - min) / (max - min)
@@ -70,7 +106,8 @@ class Weight(Base):
 
         return weights
 
-    def gaussian(self, L_in, L_out, normalize=False):
+    @staticmethod
+    def gaussian(L_in, L_out, normalize=False):
         # return self.normalize(np.random.randn(L_out, 1 + L_in)) if normalize else np.random.randn(L_out, 1 + L_in)
         return np.random.randn(L_out, 1 + L_in) / np.sqrt(L_in)
 
