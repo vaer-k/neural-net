@@ -22,7 +22,7 @@ class DigitClassifier:
                  activation_="logistic",
                  cost="mse",
                  alpha=0.05,
-                 lamda=0.005,
+                 lamda=0.5,
                  epochs=30,
                  layers=None,
                  batch_size=10,
@@ -56,7 +56,7 @@ class DigitClassifier:
         layers = self.params["layers"]
         self.weights = [neural_funcs.Weight().get(self.params["weight_init"])(x, y) for x, y in zip(layers[:-1], layers[1:])]
 
-    def fit(self, X=None, y=None):
+    def fit(self, X=None, y=None, tuning=None):
         if not X:
             print("Fitting with default (MNIST) training data and labels...")
             X = pd.read_csv(TRAIN)
@@ -64,7 +64,7 @@ class DigitClassifier:
             X = X.drop("label", axis=1).as_matrix()
 
         self.params["layers"] = [X.shape[1]] + self.params["layers"]
-        self._sgd(X, y)
+        self._sgd(X, y, tuning=None)
 
     def predict(self, x):
         _, output = self._feedforward(x)
@@ -130,7 +130,8 @@ class DigitClassifier:
         label[y] = 1
         return label
 
-    def _sgd(self, X, y):
+    def _sgd(self, X, y, tuning=None):
+        tuning = tuning or ('lamda', lambda x: x / 10)
         data = np.concatenate((y.T, X), axis=1)
         training_length = int(len(data) * .9)
         train_val = data[:training_length]
@@ -142,7 +143,10 @@ class DigitClassifier:
         fold_score = {}
         for cross_start in xrange(0, len(train_val), cross_val_size):
             self.rst_weights()
-            # TODO set new params
+            if cross_start > 0:
+                self.params[tuning[0]] = tuning[1](self.params[tuning[0]])
+
+            print("\nStarting kfold #{0} with hyperparameter \"{1}\" at value {2}".format(fold_num, tuning[0], self.params[tuning[0]]))
 
             fold_num += 1
             filename = ROOT_DIR + "/models/score_{0}.csv".format(fold_num)
@@ -164,7 +168,7 @@ class DigitClassifier:
                 batches = [train[m:m + self.params["batch_size"]]
                            for m in xrange(0, n, self.params["batch_size"])]
 
-                print("Updating model with alpha {0}".format(round(self.params["alpha"], 3)))
+                print("Updating model with alpha {0}".format(round(alpha, 3)))
                 for batch in batches:
                     y = batch[:, 0]
                     X = batch[:, 1:]
@@ -175,7 +179,7 @@ class DigitClassifier:
                 self.curr_cost = self._compute_cost(train)
 
                 if not i % 5:
-                    print("Current cost: {0}\n".format(round(self.curr_cost, 3)))
+                    print("\nCurrent cost: {0}\n".format(round(self.curr_cost, 3)))
 
                 if self.params["evaluate"]:
                     train_accu = self.evaluate(train)[0] * 100
@@ -210,6 +214,8 @@ class DigitClassifier:
 
         test_accu = self.evaluate(test)[0] * 100
         test_f1 = self.evaluate(test)[1]
+        print("\nFinal results:")
+        print("Best value for \"{0}\" param: {1}".format(tuning[0], self.params[tuning[0]]))
         print("\tTest set:")
         print("\t    accuracy: {0}%".format(test_accu))
         print("\t    F1: {0}\n".format(test_f1))
