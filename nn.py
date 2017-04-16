@@ -158,6 +158,7 @@ class DigitClassifier:
             train = np.concatenate((train_val[:cross_start], train_val[cross_end:]))
 
             n = len(train)
+            alpha = self.params["alpha"]
             for i in xrange(self.params["epochs"]):
                 train = np.random.permutation(train)
                 batches = [train[m:m + self.params["batch_size"]]
@@ -169,10 +170,7 @@ class DigitClassifier:
                     X = batch[:, 1:]
                     self._update_model(X, y)
 
-                if self.params["alpha"] < 0.01:
-                    self.params["alpha"] *= 0.95
-                else:
-                    self.params["alpha"] *= .90
+                alpha *= 0.90 if alpha > 0.01 else .95
 
                 self.curr_cost = self._compute_cost(train)
 
@@ -207,7 +205,7 @@ class DigitClassifier:
         for fold, scores in fold_score.iteritems():
             if best < scores["f1"]:
                 best = scores["f1"]
-                self.params = scores["params"]
+                self._params = scores["params"]
                 self.weights = scores["weights"]
 
         test_accu = self.evaluate(test)[0] * 100
