@@ -79,11 +79,10 @@ class Evaluation(Base):
 
             try:
                 precision = counts["tru_pos"] / counts["pred_pos"]
+                recall = counts["tru_pos"] / counts["cond_pos"]
+                counts["f1"] = 2 * (precision * recall) / (precision + recall)
             except ZeroDivisionError:
-                precision = 0.0
-
-            recall = counts["tru_pos"] / counts["cond_pos"]
-            counts["f1"] = 2 * (precision * recall) / (precision + recall)
+                counts["f1"] = 0.0
 
         return round(np.mean([counts["f1"] for _, counts in metrics.iteritems()]), 3)
 
