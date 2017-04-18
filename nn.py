@@ -1,4 +1,3 @@
-import pdb
 import os
 import csv
 import neural_funcs
@@ -191,7 +190,7 @@ class DigitClassifier:
                         writer = csv.writer(f)
 
                         if i == 0:
-                            writer.writerow("epoch", "cross_accu", "cross_f1", "cost")
+                            writer.writerow(("epoch", "cross_accu", "cross_f1", "cost"))
 
                         writer.writerow((i, cross_accu, cross_f1, self.curr_cost))
 
