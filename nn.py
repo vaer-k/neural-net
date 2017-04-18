@@ -189,7 +189,11 @@ class DigitClassifier:
 
                     with open(filename, "a+") as f:
                         writer = csv.writer(f)
-                        writer.writerow((i, cross_accu, cross_f1))
+
+                        if i == 0:
+                            writer.writerow("epoch", "cross_accu", "cross_f1", "cost")
+
+                        writer.writerow((i, cross_accu, cross_f1, self.curr_cost))
 
                     print("Epoch #{0} results:".format(i + 1))
                     print("\tTrain set:")
