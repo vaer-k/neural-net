@@ -16,6 +16,8 @@ class NeuralNetwork:
     The last integer element is considered the output layer
     :param activation_: The activation function to be used. Can be
     "logistic" or "tanh"
+    :param cost: the cost function to be used. Can be "mse" or "cross_entropy"
+    :param weight_init: Function used to generate initial weights of model. Can be "epsilon" or "gaussian"
     """
     def __init__(self,
                  activation_="logistic",
@@ -29,7 +31,6 @@ class NeuralNetwork:
                  weight_init="epsilon"):
 
         layers = layers or [25, 10]  # Default to one hidden layer with 25 units and one 10 unit output layer
-        # layers = layers or [256, 64, 10]
 
         if len(layers) < 2:
             raise TypeError("The layers arg should be a list containing at least two integers")
@@ -132,6 +133,7 @@ class NeuralNetwork:
     def _sgd(self, X, y, tuning=None):
         tuning = tuning or ('lamda', lambda x: x / 10)
         data = np.concatenate((y.T, X), axis=1)
+        np.random.shuffle(data)
         training_length = int(len(data) * .9)
         train_val = data[:training_length]
         test = data[training_length:]
