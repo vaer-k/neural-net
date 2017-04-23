@@ -10,7 +10,7 @@ TRAIN = "./raw_data/train.csv"
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class DigitClassifier:
+class NeuralNetwork:
     """
     :param layers: A list containing the number of units in each layer.
     The last integer element is considered the output layer
